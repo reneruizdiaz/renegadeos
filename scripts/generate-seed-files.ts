@@ -1,13 +1,13 @@
 /**
- * One-time script: initializes all 6 JSON files in Google Drive.
- * Run with: npx tsx scripts/init-drive.ts
+ * Generates the 6 seed JSON files locally under scripts/drive-seed/
+ * Upload those files to your Drive folder, then the service account
+ * can read and update them freely.
  *
- * Requires GOOGLE_SERVICE_ACCOUNT_KEY and GOOGLE_DRIVE_FOLDER_ID in env.
+ * Run: npx tsx scripts/generate-seed-files.ts
  */
 
-import dotenv from 'dotenv'
-dotenv.config({ path: '.env.local' })
-import { updateDriveFile } from '../lib/drive'
+import { writeFileSync, mkdirSync } from 'fs'
+import { join } from 'path'
 import type {
   Project,
   Decision,
@@ -16,6 +16,9 @@ import type {
   Opportunity,
   Session,
 } from '../lib/schema'
+
+const outDir = join(process.cwd(), 'scripts', 'drive-seed')
+mkdirSync(outDir, { recursive: true })
 
 const now = new Date().toISOString()
 const today = now.split('T')[0]
@@ -144,10 +147,10 @@ const projects: Project[] = [
     priority: 'P2',
     last_action: 'Active research and writing',
     last_action_date: today,
-    next_action: 'Continue archival work — Rudi Torga / Teatro Estudio Libre',
+    next_action: "Continue archival work — Rudi Torga / Teatro Estudio Libre",
     next_action_date: today,
     dependencies: [],
-    notes: 'Universidad Nacional de Asunción. Focus: Father Rudi Torga, Teatro Estudio Libre, Mandu\'arã.',
+    notes: "Universidad Nacional de Asunción. Focus: Father Rudi Torga, Teatro Estudio Libre, Mandu'arã.",
     created_at: now,
     updated_at: now,
   },
@@ -250,39 +253,25 @@ const opportunities: Opportunity[] = [
   },
 ]
 
-// ─── empty arrays ─────────────────────────────────────────────────────────────
-
 const contacts: Contact[] = []
 const commitments: Commitment[] = []
 const sessions: Session[] = []
 
-// ─── Write to Drive ───────────────────────────────────────────────────────────
+// ─── Write files ──────────────────────────────────────────────────────────────
 
-async function main() {
-  console.log('Initializing Drive files…')
-
-  await updateDriveFile('projects.json', projects)
-  console.log('✓ projects.json')
-
-  await updateDriveFile('decisions.json', decisions)
-  console.log('✓ decisions.json')
-
-  await updateDriveFile('opportunities.json', opportunities)
-  console.log('✓ opportunities.json')
-
-  await updateDriveFile('contacts.json', contacts)
-  console.log('✓ contacts.json')
-
-  await updateDriveFile('commitments.json', commitments)
-  console.log('✓ commitments.json')
-
-  await updateDriveFile('sessions.json', sessions)
-  console.log('✓ sessions.json')
-
-  console.log('\nDrive initialization complete.')
+const files = {
+  'projects.json': projects,
+  'decisions.json': decisions,
+  'opportunities.json': opportunities,
+  'contacts.json': contacts,
+  'commitments.json': commitments,
+  'sessions.json': sessions,
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+for (const [name, data] of Object.entries(files)) {
+  const filePath = join(outDir, name)
+  writeFileSync(filePath, JSON.stringify(data, null, 2))
+  console.log(`✓ ${filePath}`)
+}
+
+console.log(`\nDone. Upload all 6 files from scripts/drive-seed/ to your Drive folder.`)

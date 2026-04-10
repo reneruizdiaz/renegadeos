@@ -63,19 +63,14 @@ export async function updateDriveFile<K extends DriveFileName>(
 
   const existingId = await findFileId(filename)
 
-  if (existingId) {
-    await drive.files.update({
-      fileId: existingId,
-      media,
-    })
-  } else {
-    await drive.files.create({
-      requestBody: {
-        name: filename,
-        parents: [folderId],
-        mimeType: 'application/json',
-      },
-      media,
-    })
+  if (!existingId) {
+    throw new Error(
+      `File not found in Drive: ${filename}. Upload it manually to the Drive folder first.`
+    )
   }
+
+  await drive.files.update({
+    fileId: existingId,
+    media,
+  })
 }
