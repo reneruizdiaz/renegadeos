@@ -27,14 +27,16 @@ export interface Project {
   agent: Agent
   status: ProjectStatus
   priority: ProjectPriority
+  milestone?: string
+  counterparty?: string
   last_action: string
-  last_action_date: string
+  last_action_date?: string
   next_action: string
   next_action_date: string
-  dependencies: string[]
+  dependencies?: string[]
   notes: string
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 // ─── Contacts ────────────────────────────────────────────────────────────────

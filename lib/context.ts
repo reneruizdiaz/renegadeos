@@ -15,10 +15,16 @@ const DOMAIN_MAP: Record<AgentId, Domain[]> = {
 function formatProjects(projects: Project[]): string {
   if (projects.length === 0) return 'No active projects.'
   return projects
-    .map(
-      (p) =>
-        `[${p.project_id}] ${p.name} | ${p.status} ${p.priority} | Last: ${p.last_action} (${p.last_action_date}) | Next: ${p.next_action} (${p.next_action_date})${p.notes ? ` | Notes: ${p.notes}` : ''}`
-    )
+    .map((p) => {
+      let line = `[${p.project_id}] ${p.name} | ${p.status} ${p.priority}`
+      if (p.milestone) line += ` | ${p.milestone}`
+      if (p.counterparty) line += ` | Counterparty: ${p.counterparty}`
+      line += ` | Last: ${p.last_action}`
+      if (p.last_action_date) line += ` (${p.last_action_date})`
+      line += ` | Next: ${p.next_action} (${p.next_action_date})`
+      if (p.notes) line += ` | Notes: ${p.notes}`
+      return line
+    })
     .join('\n')
 }
 
