@@ -5,7 +5,14 @@ function getAuth() {
   const key = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
   if (!key) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY is not set')
 
-  const credentials = JSON.parse(key)
+  // Vercel stores \n in env vars as actual newlines, which breaks JSON.parse.
+  // If parsing fails, escape actual newlines back to \n sequences first.
+  let credentials
+  try {
+    credentials = JSON.parse(key)
+  } catch {
+    credentials = JSON.parse(key.replace(/\n/g, '\\n'))
+  }
   return new google.auth.GoogleAuth({
     credentials,
     scopes: ['https://www.googleapis.com/auth/drive'],
