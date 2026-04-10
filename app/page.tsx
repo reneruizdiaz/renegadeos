@@ -15,6 +15,16 @@ interface DomainSummary {
   nextActionDate: string | null
 }
 
+interface SessionRecord {
+  session_id: string
+  date: string
+  agent: string
+  summary: string
+  outputs: string[]
+  linked_projects: string[]
+  follow_ups: string[]
+}
+
 function formatDate(dateStr: string | null): string | null {
   if (!dateStr) return null
   const [y, m, d] = dateStr.split('-').map(Number)
@@ -24,11 +34,36 @@ function formatDate(dateStr: string | null): string | null {
   })
 }
 
+function formatDateTime(isoStr: string): string {
+  const d = new Date(isoStr)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+    ' · ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+}
+
+function agentLabel(agentId: string): string {
+  const map: Record<string, string> = {
+    'chief-of-staff': 'Chief of Staff',
+    'chief_of_staff': 'Chief of Staff',
+    'capital-markets': 'Capital Markets',
+    'capital_markets': 'Capital Markets',
+    newco: 'Newco',
+    sudestada: 'Sudestada',
+    film: 'Film & Creative',
+    media: 'Media',
+    'research-personal': 'Research',
+    research_personal: 'Research',
+  }
+  return map[agentId] ?? agentId
+}
+
 export default function Home() {
   const [domains, setDomains] = useState<DomainSummary[]>([])
+  const [domainsLoading, setDomainsLoading] = useState(true)
   const [briefing, setBriefing] = useState('')
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null)
   const [streaming, setStreaming] = useState(false)
+  const [sessions, setSessions] = useState<SessionRecord[]>([])
+  const [expandedSession, setExpandedSession] = useState<string | null>(null)
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -40,8 +75,13 @@ export default function Home() {
   useEffect(() => {
     fetch('/api/context')
       .then((r) => r.json())
-      .then(setDomains)
-      .catch(console.error)
+      .then((data) => { setDomains(data); setDomainsLoading(false) })
+      .catch(() => setDomainsLoading(false))
+
+    fetch('/api/session?limit=5')
+      .then((r) => r.json())
+      .then(setSessions)
+      .catch(() => {})
   }, [])
 
   async function generateBriefing() {
@@ -56,9 +96,7 @@ export default function Home() {
       if (!res.ok || !res.body) {
         const body = await res.text()
         let detail = body
-        try {
-          detail = JSON.parse(body).error
-        } catch {}
+        try { detail = JSON.parse(body).error } catch {}
         throw new Error(`${res.status}: ${detail}`)
       }
 
@@ -73,9 +111,7 @@ export default function Home() {
 
       setGeneratedAt(new Date())
     } catch (err) {
-      setBriefing(
-        `Error: ${err instanceof Error ? err.message : 'Failed to generate briefing.'}`
-      )
+      setBriefing(`Error: ${err instanceof Error ? err.message : 'Failed to generate briefing.'}`)
     } finally {
       setStreaming(false)
     }
@@ -84,6 +120,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0A0A0B] px-6 py-8">
       <div className="max-w-5xl mx-auto">
+
         {/* Header */}
         <div className="mb-8">
           <p className="text-[#C8920A] text-[10px] tracking-widest uppercase mb-1">
@@ -97,34 +134,37 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Domain cards */}
+        {/* Domain cards — skeleton while loading */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-          {domains.map((d) => (
-            <Link
-              key={d.agentId}
-              href={d.href}
-              className="block rounded border border-[#1E1E21] bg-[#111113] p-4 hover:border-[#8B0000] transition-colors"
-            >
-              <p className="text-[#E8E6E1] text-sm font-medium mb-0.5">
-                {d.name}
-              </p>
-              <p className="text-[#6B6868] text-[10px] mb-3">{d.subtitle}</p>
-              {d.activePriority1Count > 0 ? (
-                <>
-                  <p className="text-[#C8920A] text-xs mb-1">
-                    {d.activePriority1Count} P1 active
-                  </p>
-                  {d.nextActionDate && (
-                    <p className="text-[#6B6868] text-[10px]">
-                      Next: {formatDate(d.nextActionDate)}
-                    </p>
+          {domainsLoading
+            ? Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="rounded border border-[#1E1E21] bg-[#111113] p-4 animate-pulse">
+                  <div className="h-3 w-24 bg-[#1E1E21] rounded mb-2" />
+                  <div className="h-2 w-16 bg-[#1E1E21] rounded mb-4" />
+                  <div className="h-3 w-20 bg-[#1E1E21] rounded" />
+                </div>
+              ))
+            : domains.map((d) => (
+                <Link
+                  key={d.agentId}
+                  href={d.href}
+                  className="block rounded border border-[#1E1E21] bg-[#111113] p-4 hover:border-[#8B0000] transition-colors"
+                >
+                  <p className="text-[#E8E6E1] text-sm font-medium mb-0.5">{d.name}</p>
+                  <p className="text-[#6B6868] text-[10px] mb-3">{d.subtitle}</p>
+                  {d.activePriority1Count > 0 ? (
+                    <>
+                      <p className="text-[#C8920A] text-xs mb-1">{d.activePriority1Count} P1 active</p>
+                      {d.nextActionDate && (
+                        <p className="text-[#6B6868] text-[10px]">Next: {formatDate(d.nextActionDate)}</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-[#6B6868] text-[10px]">No P1 projects</p>
                   )}
-                </>
-              ) : (
-                <p className="text-[#6B6868] text-[10px]">No P1 projects</p>
-              )}
-            </Link>
-          ))}
+                </Link>
+              ))
+          }
         </div>
 
         {/* Briefing button */}
@@ -147,15 +187,80 @@ export default function Home() {
           />
         )}
 
-        {/* Follow-up chat */}
-        <div className="mt-8">
+        {/* Recent Sessions */}
+        <div className="mt-10">
           <div className="border-t border-[#1E1E21] pt-6 mb-4">
             <p className="text-[#C8920A] text-[10px] tracking-widest uppercase">
-              Chief of Staff
+              Recent Sessions
             </p>
-            <p className="text-[#6B6868] text-xs mt-0.5">
-              Ask follow-up questions about the briefing or any domain
-            </p>
+          </div>
+
+          {sessions.length === 0 ? (
+            <p className="text-[#6B6868] text-xs">No sessions saved yet. Use "End &amp; Save Session" in any agent to log a conversation.</p>
+          ) : (
+            <div className="space-y-2">
+              {sessions.map((s) => {
+                const expanded = expandedSession === s.session_id
+                const firstSentence = s.summary.split(/[.!?]/)[0] ?? s.summary
+                return (
+                  <div
+                    key={s.session_id}
+                    className="rounded border border-[#1E1E21] bg-[#111113] overflow-hidden"
+                  >
+                    <button
+                      onClick={() => setExpandedSession(expanded ? null : s.session_id)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#0D0D0F] transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-[#6B6868] text-[10px] shrink-0">{formatDateTime(s.date)}</span>
+                        <span className="text-[#C8920A] text-[10px] shrink-0">{agentLabel(s.agent)}</span>
+                        <span className="text-[#A8A5A0] text-xs truncate">{firstSentence}.</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 ml-3">
+                        {s.follow_ups.length > 0 && (
+                          <span className="text-[#6B6868] text-[10px]">{s.follow_ups.length} follow-up{s.follow_ups.length !== 1 ? 's' : ''}</span>
+                        )}
+                        <span className="text-[#6B6868] text-[10px]">{expanded ? '▲' : '▼'}</span>
+                      </div>
+                    </button>
+
+                    {expanded && (
+                      <div className="px-4 pb-4 pt-1 border-t border-[#1E1E21] space-y-3">
+                        <p className="text-[#E8E6E1] text-sm leading-relaxed">{s.summary}</p>
+                        {s.outputs.length > 0 && (
+                          <div>
+                            <p className="text-[#6B6868] text-[10px] uppercase tracking-wider mb-1">Outputs</p>
+                            <ul className="space-y-0.5">
+                              {s.outputs.map((o, i) => (
+                                <li key={i} className="text-[#A8A5A0] text-xs">· {o}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {s.follow_ups.length > 0 && (
+                          <div>
+                            <p className="text-[#6B6868] text-[10px] uppercase tracking-wider mb-1">Follow-ups</p>
+                            <ul className="space-y-0.5">
+                              {s.follow_ups.map((f, i) => (
+                                <li key={i} className="text-[#A8A5A0] text-xs">· {f}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Follow-up chat */}
+        <div className="mt-10">
+          <div className="border-t border-[#1E1E21] pt-6 mb-4">
+            <p className="text-[#C8920A] text-[10px] tracking-widest uppercase">Chief of Staff</p>
+            <p className="text-[#6B6868] text-xs mt-0.5">Ask follow-up questions about the briefing or any domain</p>
           </div>
           <div className="h-[500px] rounded border border-[#1E1E21] overflow-hidden">
             <AgentChat
@@ -165,6 +270,7 @@ export default function Home() {
             />
           </div>
         </div>
+
       </div>
     </div>
   )

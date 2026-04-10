@@ -70,9 +70,15 @@ export default function AgentPageLayout({
         </p>
 
         {loading ? (
-          <p className="text-[#6B6868] text-xs">
-            Loading {domainTag} context…
-          </p>
+          <div className="flex gap-3 flex-wrap">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded border border-[#1E1E21] bg-[#0D0D0F] px-4 py-3 min-w-[200px] max-w-[300px] flex-1 animate-pulse">
+                <div className="h-3 w-32 bg-[#1E1E21] rounded mb-2" />
+                <div className="h-2 w-40 bg-[#1E1E21] rounded mb-3" />
+                <div className="h-2 w-16 bg-[#1E1E21] rounded" />
+              </div>
+            ))}
+          </div>
         ) : displayProjects.length === 0 ? (
           <p className="text-[#6B6868] text-xs">No active projects.</p>
         ) : (
