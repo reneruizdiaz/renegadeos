@@ -52,7 +52,10 @@ export default function AgentChat({ agentId, agentName, starterPrompts }: AgentC
       })
 
       if (!res.ok || !res.body) {
-        throw new Error(`Error ${res.status}`)
+        const body = await res.text()
+        let detail = body
+        try { detail = JSON.parse(body).error } catch {}
+        throw new Error(`${res.status}: ${detail}`)
       }
 
       const reader = res.body.getReader()
