@@ -41,28 +41,39 @@ function parseSections(content: string): Section[] {
   return sections
 }
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')  // **bold**
+    .replace(/\*(.+?)\*/g, '$1')       // *italic*
+    .replace(/`(.+?)`/g, '$1')         // `code`
+}
+
 function renderBody(body: string) {
   const lines = body.split('\n')
   return lines.map((line, i) => {
     const trimmed = line.trim()
+    // Skip horizontal rules and stray # headers (model preamble)
+    if (trimmed === '---' || trimmed === '***' || trimmed.startsWith('# ')) {
+      return null
+    }
     if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       return (
         <li key={i} className="ml-4 list-disc text-[#E8E6E1]">
-          {trimmed.slice(2)}
+          {stripMarkdown(trimmed.slice(2))}
         </li>
       )
     }
     if (/^\d+\./.test(trimmed)) {
       return (
         <li key={i} className="ml-4 list-decimal text-[#E8E6E1]">
-          {trimmed.replace(/^\d+\.\s*/, '')}
+          {stripMarkdown(trimmed.replace(/^\d+\.\s*/, ''))}
         </li>
       )
     }
     if (trimmed === '') return <div key={i} className="h-2" />
     return (
       <p key={i} className="text-[#E8E6E1]">
-        {trimmed}
+        {stripMarkdown(trimmed)}
       </p>
     )
   })
