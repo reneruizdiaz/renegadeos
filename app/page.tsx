@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import BriefingCard from '@/components/BriefingCard'
+import AgentChat from '@/components/AgentChat'
 
 interface DomainSummary {
   agentId: string
@@ -145,6 +146,25 @@ export default function Home() {
             streaming={streaming}
           />
         )}
+
+        {/* Follow-up chat */}
+        <div className="mt-8">
+          <div className="border-t border-[#1E1E21] pt-6 mb-4">
+            <p className="text-[#C8920A] text-[10px] tracking-widest uppercase">
+              Chief of Staff
+            </p>
+            <p className="text-[#6B6868] text-xs mt-0.5">
+              Ask follow-up questions about the briefing or any domain
+            </p>
+          </div>
+          <div className="h-[500px] rounded border border-[#1E1E21] overflow-hidden">
+            <AgentChat
+              agentId="chief-of-staff"
+              agentName="Chief of Staff"
+              starterPrompts={[]}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
