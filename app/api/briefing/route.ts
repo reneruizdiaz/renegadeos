@@ -3,9 +3,6 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getDriveFile } from '@/lib/drive'
 import { getAgent } from '@/lib/agents'
 import type { Project, Decision, Commitment, Opportunity, Session } from '@/lib/schema'
-import fs from 'fs'
-import os from 'os'
-import path from 'path'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +34,6 @@ function assembleBriefingContext(
   )
   const recentSessions = sessions.slice(-3)
 
-  // Group projects by domain
   const byDomain: Record<string, Project[]> = {}
   for (const p of activeProjects) {
     if (!byDomain[p.domain]) byDomain[p.domain] = []
@@ -117,16 +113,10 @@ export async function POST(_request: NextRequest) {
       sessions
     )
 
-    // Load daily brief from local Drive filesystem
+    // Load daily brief from Drive (same folder as other data files)
     let dailyBrief = null
     try {
-      const briefPath = path.join(
-        os.homedir(),
-        'Library/CloudStorage/GoogleDrive-rene.ruizdiaz@gmail.com/My Drive/renegade-os-data/daily-brief.json'
-      )
-      if (fs.existsSync(briefPath)) {
-        dailyBrief = JSON.parse(fs.readFileSync(briefPath, 'utf8'))
-      }
+      dailyBrief = await getDriveFile('daily-brief.json')
     } catch (e) {
       // Brief not yet generated — continue without it
     }
