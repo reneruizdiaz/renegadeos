@@ -155,6 +155,7 @@ export interface DriveData {
   'commitments.json': Commitment[]
   'opportunities.json': Opportunity[]
   'sessions.json': Session[]
+  'daily-brief.json': any
 }
 
 export type DriveFileName = keyof DriveData
