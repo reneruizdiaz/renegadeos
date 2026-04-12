@@ -72,7 +72,6 @@ export default function DomainNav() {
         <p className="text-[10px] text-[#6B6868]">René Ruiz Díaz</p>
         <p className="text-[10px] text-[#6B6868]">Asunción, Paraguay</p>
       </div>
-      <UsageCard />
     </nav>
   )
 }
