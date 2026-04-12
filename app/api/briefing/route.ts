@@ -118,7 +118,7 @@ export async function POST(_request: NextRequest) {
     try {
       dailyBrief = await getDriveFile('daily-brief.json')
     } catch (e) {
-      // Brief not yet generated — continue without it
+      console.error("daily-brief load error:", e)
     }
 
     // Append daily brief to context if available
