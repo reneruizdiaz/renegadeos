@@ -3,6 +3,9 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getDriveFile } from '@/lib/drive'
 import { getAgent } from '@/lib/agents'
 import type { Project, Decision, Commitment, Opportunity, Session } from '@/lib/schema'
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
 
 export const dynamic = 'force-dynamic'
 
@@ -114,6 +117,40 @@ export async function POST(_request: NextRequest) {
       sessions
     )
 
+    // Load daily brief from local Drive filesystem
+    let dailyBrief = null
+    try {
+      const briefPath = path.join(
+        os.homedir(),
+        'Library/CloudStorage/GoogleDrive-rene.ruizdiaz@gmail.com/My Drive/renegade-os-data/daily-brief.json'
+      )
+      if (fs.existsSync(briefPath)) {
+        dailyBrief = JSON.parse(fs.readFileSync(briefPath, 'utf8'))
+      }
+    } catch (e) {
+      // Brief not yet generated — continue without it
+    }
+
+    // Append daily brief to context if available
+    let fullContext = contextBlock
+    if (dailyBrief) {
+      fullContext += `\n\n## INTELIGENCIA DEL DÍA — ${dailyBrief.date}\n\n`
+      fullContext += `${dailyBrief.coffee_brief ?? ''}\n\n`
+      if (dailyBrief.signal_of_day) {
+        fullContext += `**SEÑAL DEL DÍA:** ${dailyBrief.signal_of_day}\n${dailyBrief.signal_reason ?? ''}\n\n`
+      }
+      fullContext += `### Detalle por dominio\n`
+      for (const [domain, entries] of Object.entries(dailyBrief.by_domain ?? {})) {
+        const arr = entries as Array<{ name: string; summary: string }>
+        if (!arr.length) continue
+        fullContext += `**${domain}**\n`
+        for (const e of arr) {
+          fullContext += `${e.name}: ${e.summary}\n`
+        }
+        fullContext += '\n'
+      }
+    }
+
     const agent = getAgent('chief-of-staff')
     const systemPrompt =
       agent.systemPrompt +
@@ -129,7 +166,7 @@ export async function POST(_request: NextRequest) {
     const stream = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
-      system: `${systemPrompt}\n\n${contextBlock}`,
+      system: `${systemPrompt}\n\n${fullContext}`,
       messages: [
         {
           role: 'user',

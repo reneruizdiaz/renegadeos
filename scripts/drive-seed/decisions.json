@@ -1,0 +1,78 @@
+[
+  {
+    "decision_id": "D-001",
+    "date": "2026-04-01",
+    "domain": "SUDESTADA",
+    "title": "Left Itacuá Bienes y Raíces",
+    "rationale": "Separated from Itacuá. Real estate advisory moves entirely into Sudestada Holdings.",
+    "implications": [
+      "No Itacuá domain or agent in Renegade OS",
+      "Real estate portfolio tracked under SUDESTADA"
+    ],
+    "linked_projects": [
+      "P-006"
+    ],
+    "status": "STANDING"
+  },
+  {
+    "decision_id": "D-002",
+    "date": "2026-04-10",
+    "domain": "FILM",
+    "title": "Running for President — Academia de Cine del Paraguay",
+    "rationale": "Strategic positioning in Paraguayan film ecosystem.",
+    "implications": [
+      "Candidacy is ACTIVE P2 under FILM domain"
+    ],
+    "linked_projects": [
+      "P-010"
+    ],
+    "status": "STANDING"
+  },
+  {
+    "decision_id": "D-003",
+    "date": "2026-04-10",
+    "domain": "PERSONAL",
+    "title": "Renegade OS: Next.js + Vercel deployment",
+    "rationale": "Full Next.js app from day one. Same pattern as sudestadaholdings.com.",
+    "implications": [
+      "Deployed on Vercel at renegade.reneruizdiaz.com",
+      "Google Drive via Service Account",
+      "Password-gated proxy"
+    ],
+    "linked_projects": [
+      "P-013"
+    ],
+    "status": "STANDING"
+  },
+  {
+    "decision_id": "D-004",
+    "date": "2026-04-10",
+    "domain": "NEWCO",
+    "title": "René takes Lead Board Member + PM role on Project Newco",
+    "rationale": "Banco Continental Group engaged René to lead the build. July 31 MVP is non-negotiable.",
+    "implications": [
+      "Newco is P1 alongside Maldecidos — sequencing risk if July gets crowded",
+      "Board alignment required before June 30"
+    ],
+    "linked_projects": [
+      "P-004",
+      "P-005"
+    ],
+    "status": "STANDING"
+  },
+  {
+    "decision_id": "D-005",
+    "date": "2026-04-10",
+    "domain": "SUDESTADA",
+    "title": "$6-7M advisory lead is highest Sudestada priority",
+    "rationale": "First inbound client validates the independent advisory thesis. Move fast.",
+    "implications": [
+      "Fee proposal due April 17",
+      "All other Sudestada architecture work is secondary until this is closed"
+    ],
+    "linked_projects": [
+      "P-007"
+    ],
+    "status": "STANDING"
+  }
+]
