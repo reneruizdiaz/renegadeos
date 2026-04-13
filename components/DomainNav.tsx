@@ -67,6 +67,11 @@ export default function DomainNav() {
         })}
       </div>
 
+      {/* Usage */}
+      <div className="px-3">
+        <UsageCard />
+      </div>
+
       {/* Footer */}
       <div className="px-5 py-4 border-t border-[#1E1E21]">
         <p className="text-[10px] text-[#6B6868]">René Ruiz Díaz</p>

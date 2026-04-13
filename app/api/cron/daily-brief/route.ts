@@ -94,11 +94,16 @@ async function writeBriefToDrive(brief: any) {
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
   if (!keyRaw || !folderId) throw new Error('Missing Drive env vars')
 
-  const key = JSON.parse(keyRaw)
-  const auth = new google.auth.JWT(
-    key.client_email, undefined, key.private_key,
-    ['https://www.googleapis.com/auth/drive']
-  )
+  let credentials
+  try {
+    credentials = JSON.parse(keyRaw)
+  } catch {
+    credentials = JSON.parse(keyRaw.replace(/\n/g, '\\n'))
+  }
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/drive'],
+  })
   const drive = google.drive({ version: 'v3', auth })
   const content = JSON.stringify(brief, null, 2)
 
