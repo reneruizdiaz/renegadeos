@@ -38,7 +38,12 @@ function readSources() {
     console.error(`ERROR: Directory not found: ${RAW_DIR}`);
     process.exit(1);
   }
-  const files = fs.readdirSync(RAW_DIR).filter((f) => f.endsWith(".md"));
+  // Top-level .md files only. raw/<domain>/news/ holds daily-brief clippings,
+  // which are not wiki source material.
+  const files = fs
+    .readdirSync(RAW_DIR, { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith(".md") && !e.name.startsWith("."))
+    .map((e) => e.name);
   if (files.length === 0) {
     console.error(`ERROR: No .md files found in ${RAW_DIR}`);
     process.exit(1);
@@ -60,6 +65,9 @@ function readSources() {
 }
 
 function ensureWikiDir() {
+  // Clear before write: stale concept articles from previous runs would
+  // otherwise linger as duplicates when concept_ids shift between runs.
+  fs.rmSync(WIKI_DIR, { recursive: true, force: true });
   fs.mkdirSync(WIKI_DIR, { recursive: true });
 }
 
@@ -315,9 +323,10 @@ async function main() {
     process.exit(1);
   }
 
-  ensureWikiDir();
   const sources  = readSources();
   const concepts = await extractConcepts(sources);
+  // Clear only after extraction succeeds, so a failed run can't wipe the wiki
+  ensureWikiDir();
   await writeConceptArticles(concepts, sources);
   await writeIndex(concepts, sources);
   await writeSources(concepts, sources);
