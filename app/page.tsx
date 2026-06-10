@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import BriefingCard from '@/components/BriefingCard'
 import AgentChat from '@/components/AgentChat'
+import IntelligenceFeed from '@/components/IntelligenceFeed'
 
 interface DomainSummary {
   agentId: string
@@ -166,6 +167,9 @@ export default function Home() {
               ))
           }
         </div>
+
+        {/* Daily intelligence feed */}
+        <IntelligenceFeed />
 
         {/* Briefing button */}
         <div className="flex justify-center mb-8">
