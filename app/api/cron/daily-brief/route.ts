@@ -14,6 +14,23 @@ function today() { return new Date().toISOString().split('T')[0] }
 function nowISO() { return new Date().toISOString() }
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 
+// Silent degradation is prohibited (handoff 2026-06-09, Task 4): retry once,
+// then surface the real error to the caller so it lands in the brief payload.
+async function withOneRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn()
+  } catch (firstErr: any) {
+    console.error(`${label} failed (attempt 1):`, firstErr?.message ?? firstErr)
+    await sleep(2000)
+    try {
+      return await fn()
+    } catch (secondErr: any) {
+      console.error(`${label} failed (attempt 2):`, secondErr?.message ?? secondErr)
+      throw secondErr
+    }
+  }
+}
+
 async function fetchRSS(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: { 'User-Agent': 'RenegadeOS/1.0' },
@@ -98,7 +115,9 @@ async function writeBriefToDrive(brief: any) {
   try {
     credentials = JSON.parse(keyRaw)
   } catch {
-    credentials = JSON.parse(keyRaw.replace(/\n/g, '\\n'))
+    credentials = JSON.parse(
+      keyRaw.trim().replace(/(\\n)+$/, '').replace(/\n/g, '\\n')
+    )
   }
   const auth = new google.auth.GoogleAuth({
     credentials,
@@ -147,7 +166,8 @@ export async function GET(request: Request) {
         try {
           summary = await summarize(entry, articles.slice(0, 3))
           hasSignal = summary !== 'SIN NOVEDAD' && summary.length > 0
-        } catch {
+        } catch (err: any) {
+          console.error(`Summarize failed for ${entry.name}:`, err?.message ?? err)
           summary = articles.map((a: any) => `"${a.title}"`).join('\n')
           hasSignal = true
         }
@@ -160,16 +180,21 @@ export async function GET(request: Request) {
 
     const dateStr = today()
     const signals = results.filter(r => r.has_signal)
-    let coffeeBrief = null, signalOfDay = null, signalReason = null
+    let coffeeBrief: string | null = null
+    let signalOfDay = null, signalReason = null
+    let synthesisError: string | null = null
 
     if (signals.length > 0) {
       try {
-        const parsed = await buildCoffeeBrief(signals, dateStr)
+        const parsed = await withOneRetry('Coffee brief synthesis', () =>
+          buildCoffeeBrief(signals, dateStr)
+        )
         coffeeBrief = parsed.coffee_brief ?? null
         signalOfDay = parsed.signal_of_day ?? null
         signalReason = parsed.signal_reason ?? null
       } catch (err: any) {
-        console.warn('Coffee brief failed:', err.message)
+        synthesisError = err?.message ?? String(err)
+        coffeeBrief = `⚠️ FALLO DE SÍNTESIS — el brief de café no pudo generarse tras 2 intentos. Error: ${synthesisError}. Las señales por dominio de abajo siguen siendo válidas.`
       }
     }
 
@@ -187,6 +212,7 @@ export async function GET(request: Request) {
       coffee_brief: coffeeBrief,
       signal_of_day: signalOfDay,
       signal_reason: signalReason,
+      synthesis_error: synthesisError,
       total_entries_checked: results.length,
       total_with_signal: signals.length,
       by_domain: byDomain,
@@ -194,7 +220,13 @@ export async function GET(request: Request) {
 
     await writeBriefToDrive(brief)
 
-    return NextResponse.json({ ok: true, date: dateStr, signals: signals.length, entries: results.length })
+    return NextResponse.json({
+      ok: synthesisError === null,
+      date: dateStr,
+      signals: signals.length,
+      entries: results.length,
+      synthesis_error: synthesisError,
+    })
   } catch (err: any) {
     console.error('Cron daily-brief error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
