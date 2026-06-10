@@ -6,12 +6,17 @@ function getAuth() {
   if (!key) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY is not set')
 
   // Vercel stores \n in env vars as actual newlines, which breaks JSON.parse.
-  // If parsing fails, escape actual newlines back to \n sequences first.
+  // `vercel env pull` can also leave a literal trailing \n after the JSON.
+  // If parsing fails, strip trailing junk and escape actual newlines.
   let credentials
   try {
     credentials = JSON.parse(key)
   } catch {
-    credentials = JSON.parse(key.replace(/\n/g, '\\n'))
+    const cleaned = key
+      .trim()
+      .replace(/(\\n)+$/, '')
+      .replace(/\n/g, '\\n')
+    credentials = JSON.parse(cleaned)
   }
   return new google.auth.GoogleAuth({
     credentials,

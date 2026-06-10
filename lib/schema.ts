@@ -1,6 +1,13 @@
 // ─── Projects ────────────────────────────────────────────────────────────────
 
-export type ProjectStatus = 'ACTIVE' | 'WATCH' | 'STALLED' | 'CLOSED' | 'SOMEDAY'
+export type ProjectStatus =
+  | 'ACTIVE'
+  | 'WATCH'
+  | 'STALLED'
+  | 'ON_HOLD'
+  | 'DORMANT'
+  | 'CLOSED'
+  | 'SOMEDAY'
 export type ProjectPriority = 'P1' | 'P2' | 'P3'
 export type Domain =
   | 'CAPITAL_MARKETS'
@@ -115,6 +122,7 @@ export type OpportunityProbability = 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN'
 export type OpportunityStatus =
   | 'LIVE'
   | 'QUALIFIED'
+  | 'DORMANT'
   | 'PASSED'
   | 'CLOSED_WON'
   | 'CLOSED_LOST'
@@ -132,6 +140,7 @@ export interface Opportunity {
   linked_contact: string
   status: OpportunityStatus
   notes: string
+  updated_at?: string
 }
 
 // ─── Sessions ────────────────────────────────────────────────────────────────
