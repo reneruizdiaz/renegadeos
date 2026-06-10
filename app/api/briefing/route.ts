@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDriveFile } from '@/lib/drive'
 import { getAgent } from '@/lib/agents'
+import { formatChiefProjects } from '@/lib/context'
 import type { Project, Decision, Commitment, Opportunity, Session } from '@/lib/schema'
 
 export const dynamic = 'force-dynamic'
@@ -18,13 +19,6 @@ function assembleBriefingContext(
   const today = new Date()
   const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  const activeProjects = projects
-    .filter((p) => p.status === 'ACTIVE' || p.status === 'WATCH')
-    .sort((a, b) => {
-      const pri: Record<string, number> = { P1: 0, P2: 1, P3: 2 }
-      return (pri[a.priority] ?? 3) - (pri[b.priority] ?? 3)
-    })
-
   const openCommitments = commitments.filter((c) => c.status === 'OPEN')
   const liveOpps = opportunities.filter(
     (o) => o.status === 'LIVE' || o.status === 'QUALIFIED'
@@ -34,28 +28,14 @@ function assembleBriefingContext(
   )
   const recentSessions = sessions.slice(-3)
 
-  const byDomain: Record<string, Project[]> = {}
-  for (const p of activeProjects) {
-    if (!byDomain[p.domain]) byDomain[p.domain] = []
-    byDomain[p.domain].push(p)
-  }
-
   const todayStr = today.toISOString().split('T')[0]
   let ctx = `--- MORNING BRIEFING CONTEXT — ${todayStr} ---\n\n`
 
-  ctx += '## ACTIVE PROJECTS BY DOMAIN\n'
-  for (const [domain, projs] of Object.entries(byDomain)) {
-    ctx += `\n### ${domain}\n`
-    for (const p of projs) {
-      ctx += `[${p.project_id}] ${p.name} | ${p.status} ${p.priority}`
-      if (p.milestone) ctx += ` | ${p.milestone}`
-      if (p.counterparty) ctx += ` | Counterparty: ${p.counterparty}`
-      ctx += `\n  Last: ${p.last_action}`
-      ctx += `\n  Next: ${p.next_action} — by ${p.next_action_date}`
-      if (p.notes) ctx += `\n  Notes: ${p.notes}`
-      ctx += '\n'
-    }
-  }
+  // Briefing filter rule (D-010): P1s + anything due within 14 days,
+  // everything else collapsed to one line per domain.
+  ctx += '## PROJECTS\n'
+  ctx += formatChiefProjects(projects)
+  ctx += '\n'
 
   if (openCommitments.length > 0) {
     ctx += '\n## OPEN COMMITMENTS\n'

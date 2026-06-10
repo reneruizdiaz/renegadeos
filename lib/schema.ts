@@ -155,6 +155,16 @@ export interface Session {
   follow_ups: string[]
 }
 
+// ─── Changelog ───────────────────────────────────────────────────────────────
+
+export interface ChangelogEntry {
+  timestamp: string
+  agent: Agent
+  tool: string
+  target_id: string
+  diff: Record<string, { from: unknown; to: unknown }>
+}
+
 // ─── Drive data shape ────────────────────────────────────────────────────────
 
 export interface DriveData {
@@ -164,6 +174,7 @@ export interface DriveData {
   'commitments.json': Commitment[]
   'opportunities.json': Opportunity[]
   'sessions.json': Session[]
+  'changelog.json': ChangelogEntry[]
   'daily-brief.json': any
 }
 

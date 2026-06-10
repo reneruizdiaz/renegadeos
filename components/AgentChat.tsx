@@ -22,6 +22,12 @@ export default function AgentChat({ agentId, agentName, starterPrompts }: AgentC
   const [saving, setSaving] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Stable per chat session — lets the server upsert one auto session note
+  const conversationIdRef = useRef<string>(
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  )
 
   const hasMessages = messages.length > 0
 
@@ -56,6 +62,7 @@ export default function AgentChat({ agentId, agentName, starterPrompts }: AgentC
           agentId,
           message: text,
           conversationHistory: history,
+          conversationId: conversationIdRef.current,
         }),
       })
 
