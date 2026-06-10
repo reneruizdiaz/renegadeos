@@ -154,6 +154,9 @@ export async function POST(request: NextRequest) {
 
     const readable = new ReadableStream({
       async start(controller) {
+        // Writes that already hit Drive — if a later model round fails, these
+        // must still be reported to the user instead of a dead stream.
+        const executedWrites: string[] = []
         try {
           // Guardrail: one write batch per message. The first tool_use round
           // executes; any further round gets an error result and the model
@@ -198,6 +201,9 @@ export async function POST(request: NextRequest) {
               }))
               results = await executeWriteBatch(calls, agent.schemaAgent)
               wroteBatch = true
+              executedWrites.push(
+                ...results.filter((r) => !r.is_error).map((r) => r.content)
+              )
             }
 
             messages = [
@@ -215,7 +221,15 @@ export async function POST(request: NextRequest) {
             ]
           }
         } catch (err) {
-          controller.error(err)
+          console.error('[/api/chat stream]', err instanceof Error ? err.message : err)
+          if (executedWrites.length > 0) {
+            const note = `\n\n✓ Saved to Drive: ${executedWrites.join(' ')} (the reply was interrupted, but the change is persisted.)`
+            assistantText += note
+            controller.enqueue(encoder.encode(note))
+            controller.close()
+          } else {
+            controller.error(err)
+          }
           return
         }
         controller.close()
